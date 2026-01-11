@@ -169,13 +169,13 @@ impl Metrics {
                 .data(
                     BarGroup::default().bars(&[
                         Bar::default()
-                            .label("TCP".into())
+                            .label("TCP")
                             .style(Style::new().fg(Color::LightYellow))
                             .value(metric.tcp_count.try_into().unwrap())
                             .value_style(Style::new().fg(Color::Black).bg(Color::LightYellow))
                             .text_value(metric.tcp_count.to_string()),
                         Bar::default()
-                            .label("UDP".into())
+                            .label("UDP")
                             .style(Style::new().fg(Color::LightBlue))
                             .value_style(Style::new().fg(Color::Black).bg(Color::LightBlue))
                             .value(metric.udp_count.try_into().unwrap())

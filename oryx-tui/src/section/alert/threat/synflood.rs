@@ -1,3 +1,4 @@
+use ratatui::prelude::Widget;
 use std::net::IpAddr;
 
 use ratatui::{
@@ -56,6 +57,6 @@ impl ratatui::widgets::WidgetRef for SynFlood {
                     .title_alignment(Alignment::Center),
             );
 
-        table.render_ref(area, buf);
+        table.render(area, buf);
     }
 }

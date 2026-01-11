@@ -6,7 +6,7 @@ use std::thread;
 use std::time::Duration;
 
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use ratatui::style::{Style, Stylize};
+use ratatui::style::Style;
 use ratatui::symbols;
 use ratatui::widgets::{Axis, Chart, Dataset, GraphType};
 use ratatui::{

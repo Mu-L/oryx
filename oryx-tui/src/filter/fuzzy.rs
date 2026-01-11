@@ -5,7 +5,7 @@ use std::{
 };
 
 use ratatui::{
-    style::{Style, Stylize},
+    style::Style,
     text::{Line, Span},
     widgets::{Cell, TableState},
 };

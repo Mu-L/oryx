@@ -200,7 +200,7 @@ impl Stats {
             .bar_gap(1)
             .data(
                 BarGroup::default().bars(&[Bar::default()
-                    .label("ARP".into())
+                    .label("ARP")
                     .style(Style::new().fg(Color::LightYellow))
                     .value_style(Style::new().fg(Color::Black).bg(Color::LightYellow))
                     .text_value(if packet_stats.total != 0 {
@@ -223,7 +223,7 @@ impl Stats {
             .data(
                 BarGroup::default().bars(&[
                     Bar::default()
-                        .label("TCP".into())
+                        .label("TCP")
                         .style(Style::new().fg(Color::LightBlue))
                         .value_style(Style::new().fg(Color::Black).bg(Color::LightBlue))
                         .text_value(if packet_stats.total != 0 {
@@ -237,7 +237,7 @@ impl Stats {
                             0
                         }),
                     Bar::default()
-                        .label("UDP".into())
+                        .label("UDP")
                         .style(Style::new().fg(Color::LightGreen))
                         .value_style(Style::new().fg(Color::Black).bg(Color::LightGreen))
                         .text_value(if packet_stats.total != 0 {
@@ -251,7 +251,7 @@ impl Stats {
                             0
                         }),
                     Bar::default()
-                        .label("SCTP".into())
+                        .label("SCTP")
                         .style(Style::new().fg(Color::LightRed))
                         .value_style(Style::new().fg(Color::Black).bg(Color::LightRed))
                         .text_value(if packet_stats.total != 0 {
@@ -268,7 +268,7 @@ impl Stats {
                             0
                         }),
                     Bar::default()
-                        .label("ICMPv4".into())
+                        .label("ICMPv4")
                         .style(Style::new().fg(Color::LightCyan))
                         .value_style(Style::new().fg(Color::Black).bg(Color::LightCyan))
                         .text_value(if packet_stats.total != 0 {
@@ -285,7 +285,7 @@ impl Stats {
                             0
                         }),
                     Bar::default()
-                        .label("ICMPv6".into())
+                        .label("ICMPv6")
                         .style(Style::new().fg(Color::LightCyan))
                         .value_style(Style::new().fg(Color::Black).bg(Color::LightCyan))
                         .text_value(if packet_stats.total != 0 {
@@ -312,7 +312,7 @@ impl Stats {
             .data(
                 BarGroup::default().bars(&[
                     Bar::default()
-                        .label("IPv4".into())
+                        .label("IPv4")
                         .style(Style::new().fg(Color::LightRed))
                         .value_style(Style::new().fg(Color::Black).bg(Color::LightRed))
                         .text_value(if packet_stats.total != 0 {
@@ -326,7 +326,7 @@ impl Stats {
                             0
                         }),
                     Bar::default()
-                        .label("IPv6".into())
+                        .label("IPv6")
                         .style(Style::new().fg(Color::LightCyan))
                         .value_style(Style::new().fg(Color::Black).bg(Color::LightCyan))
                         .text_value(if packet_stats.total != 0 {
