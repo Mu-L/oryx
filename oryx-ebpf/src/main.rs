@@ -14,13 +14,14 @@ use network_types::{
     arp::ArpHdr,
     eth::{EthHdr, EtherType},
     icmp::{Icmp, IcmpHdr, IcmpV6Hdr},
+    igmp::{IGMPv1Hdr, IGMPv2Hdr, IGMPv3MembershipQueryHdr, IGMPv3MembershipReportHdr},
     ip::{IpHdr, IpProto, Ipv4Hdr, Ipv6Hdr},
     sctp::SctpHdr,
     tcp::TcpHdr,
     udp::UdpHdr,
 };
 use oryx_common::{
-    MAX_FIREWALL_RULES, MAX_RULES_PORT, ProtoHdr, RawData, RawFrame, RawPacket,
+    IGMPv3Hdr, IgmpHdr, MAX_FIREWALL_RULES, MAX_RULES_PORT, ProtoHdr, RawData, RawFrame, RawPacket,
     protocols::{LinkProtocol, NetworkProtocol, Protocol, TransportProtocol},
 };
 
@@ -302,6 +303,140 @@ fn process(ctx: TcContext) -> Result<i32, ()> {
                             },
                             pid,
                         });
+                    }
+                }
+
+                IpProto::Igmp => {
+                    if filter_packet(Protocol::Network(NetworkProtocol::Igmp)) {
+                        return Ok(TC_ACT_PIPE);
+                    }
+
+                    let payload_length = unsafe {
+                        u16::from_be_bytes((*ipv4_header).tot_len) - (*ipv4_header).ihl() as u16
+                    };
+
+                    let ihl: u8 = ctx.load(EthHdr::LEN).map_err(|_| ())?;
+                    let ihl = (ihl & 0x0F) * 4;
+
+                    let igmp_type: u8 = ctx.load(EthHdr::LEN + ihl as usize).map_err(|_| ())?;
+
+                    match igmp_type {
+                        0x11 => {
+                            if payload_length == 8 {
+                                // v1 or v2
+                                let max_response_time: u8 =
+                                    ctx.load(EthHdr::LEN + ihl as usize + 1).map_err(|_| ())?;
+
+                                if max_response_time == 0 {
+                                    //v1
+                                    let igmp_header: *const IGMPv1Hdr =
+                                        ptr_at(&ctx, EthHdr::LEN + ihl as usize)?;
+
+                                    unsafe {
+                                        submit(RawData {
+                                            frame: RawFrame {
+                                                header: *eth_header,
+                                                payload: RawPacket::Ip(
+                                                    IpHdr::V4(*ipv4_header),
+                                                    ProtoHdr::Igmp(IgmpHdr::V1(*igmp_header)),
+                                                ),
+                                            },
+                                            pid,
+                                        });
+                                    }
+                                } else {
+                                    // v2
+                                    let igmp_header: *const IGMPv2Hdr =
+                                        ptr_at(&ctx, EthHdr::LEN + ihl as usize)?;
+
+                                    unsafe {
+                                        submit(RawData {
+                                            frame: RawFrame {
+                                                header: *eth_header,
+                                                payload: RawPacket::Ip(
+                                                    IpHdr::V4(*ipv4_header),
+                                                    ProtoHdr::Igmp(IgmpHdr::V2(*igmp_header)),
+                                                ),
+                                            },
+                                            pid,
+                                        });
+                                    }
+                                }
+                            } else {
+                                // v3
+                                let igmp_header: *const IGMPv3MembershipQueryHdr =
+                                    ptr_at(&ctx, EthHdr::LEN + ihl as usize)?;
+
+                                unsafe {
+                                    submit(RawData {
+                                        frame: RawFrame {
+                                            header: *eth_header,
+                                            payload: RawPacket::Ip(
+                                                IpHdr::V4(*ipv4_header),
+                                                ProtoHdr::Igmp(IgmpHdr::V3(IGMPv3Hdr::Query(
+                                                    *igmp_header,
+                                                ))),
+                                            ),
+                                        },
+                                        pid,
+                                    });
+                                }
+                            }
+                        }
+                        0x12 => {
+                            let igmp_header: *const IGMPv1Hdr =
+                                ptr_at(&ctx, EthHdr::LEN + ihl as usize)?;
+
+                            unsafe {
+                                submit(RawData {
+                                    frame: RawFrame {
+                                        header: *eth_header,
+                                        payload: RawPacket::Ip(
+                                            IpHdr::V4(*ipv4_header),
+                                            ProtoHdr::Igmp(IgmpHdr::V1(*igmp_header)),
+                                        ),
+                                    },
+                                    pid,
+                                });
+                            }
+                        }
+                        0x16 | 0x17 => {
+                            let igmp_header: *const IGMPv2Hdr =
+                                ptr_at(&ctx, EthHdr::LEN + ihl as usize)?;
+
+                            unsafe {
+                                submit(RawData {
+                                    frame: RawFrame {
+                                        header: *eth_header,
+                                        payload: RawPacket::Ip(
+                                            IpHdr::V4(*ipv4_header),
+                                            ProtoHdr::Igmp(IgmpHdr::V2(*igmp_header)),
+                                        ),
+                                    },
+                                    pid,
+                                });
+                            }
+                        }
+                        0x22 => {
+                            let igmp_header: *const IGMPv3MembershipReportHdr =
+                                ptr_at(&ctx, EthHdr::LEN + ihl as usize)?;
+
+                            unsafe {
+                                submit(RawData {
+                                    frame: RawFrame {
+                                        header: *eth_header,
+                                        payload: RawPacket::Ip(
+                                            IpHdr::V4(*ipv4_header),
+                                            ProtoHdr::Igmp(IgmpHdr::V3(IGMPv3Hdr::Report(
+                                                *igmp_header,
+                                            ))),
+                                        ),
+                                    },
+                                    pid,
+                                });
+                            }
+                        }
+                        _ => {}
                     }
                 }
                 _ => {}

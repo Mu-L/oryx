@@ -1,4 +1,5 @@
 pub mod icmp;
+pub mod igmp;
 pub mod ip;
 
 use core::fmt::Display;
@@ -77,6 +78,20 @@ impl IpPacket {
                     };
                     ip_packet.render(network_block, frame);
                     icmp_packet.render(transport_block, frame);
+                }
+                IpProto::Igmp(igmp_packet) => {
+                    let (transport_block, network_block) = {
+                        let chunks = Layout::default()
+                            .direction(Direction::Vertical)
+                            .constraints([Constraint::Length(7), Constraint::Length(13)])
+                            .flex(ratatui::layout::Flex::SpaceAround)
+                            .margin(2)
+                            .split(block);
+
+                        (chunks[0], chunks[1])
+                    };
+                    ip_packet.render(network_block, frame);
+                    igmp_packet.render(transport_block, frame);
                 }
                 _ => unreachable!(),
             },
@@ -181,6 +196,9 @@ impl Display for IpPacket {
                 IpProto::Icmp(_) => {
                     write!(f, "{} {} ICMP", ipv4_packet.src_ip, ipv4_packet.dst_ip)
                 }
+                IpProto::Igmp(_) => {
+                    write!(f, "{} {} IGMP", ipv4_packet.src_ip, ipv4_packet.dst_ip)
+                }
             },
             IpPacket::V6(ipv6_packet) => match ipv6_packet.proto {
                 IpProto::Tcp(tcp_packet) => {
@@ -215,6 +233,9 @@ impl Display for IpPacket {
                 }
                 IpProto::Icmp(_) => {
                     write!(f, "{} {} ICMP", ipv6_packet.src_ip, ipv6_packet.dst_ip)
+                }
+                IpProto::Igmp(_) => {
+                    unreachable!()
                 }
             },
         }

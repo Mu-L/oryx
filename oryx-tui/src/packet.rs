@@ -11,12 +11,18 @@ use direction::TrafficDirection;
 use link::{ArpPacket, ArpType, MacAddr};
 use network::{IpPacket, icmp::IcmpPacket, icmp::icmpv4, icmp::icmpv6, ip::IpProto};
 use network_types::{eth::EthHdr, icmp::Icmp, ip::IpHdr};
-use oryx_common::{ProtoHdr, RawFrame, RawPacket};
+use oryx_common::{IGMPv3Hdr, IgmpHdr, ProtoHdr, RawFrame, RawPacket};
 use transport::{SctpPacket, TcpPacket, UdpPacket};
 
 use crate::packet::network::{
-    icmp::icmpv4::Icmpv4Packet, icmp::icmpv6::Icmpv6Packet, ip::ipv4::Ipv4Packet,
-    ip::ipv6::Ipv6Packet,
+    icmp::{icmpv4::Icmpv4Packet, icmpv6::Icmpv6Packet},
+    igmp::{
+        IgmpPacket, IgmpType,
+        igmpv1::IGMPv1Packet,
+        igmpv2::IGMPv2Packet,
+        igmpv3::{IGMPv3MembershipQueryPacket, IGMPv3MembershipReportPacket, IGMPv3Packet},
+    },
+    ip::{ipv4::Ipv4Packet, ipv6::Ipv6Packet},
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -98,6 +104,46 @@ impl From<RawFrame> for EthFrame {
                                 checksum: u16::from_be_bytes(icmp_header.check),
                             }))
                         }
+                        ProtoHdr::Igmp(igmp_header) => match igmp_header {
+                            IgmpHdr::V1(igmpv1_hdr) => {
+                                let igmp_type =
+                                    IgmpType::try_from(igmpv1_hdr.type_() | 1 << 1).unwrap();
+                                IpProto::Igmp(IgmpPacket::V1(IGMPv1Packet {
+                                    igmp_type,
+                                    checksum: igmpv1_hdr.checksum(),
+                                    group_address: Ipv4Addr::from_bits(igmpv1_hdr.group_address()),
+                                }))
+                            }
+                            IgmpHdr::V2(igmpv2_hdr) => {
+                                let igmp_type =
+                                    IgmpType::try_from(igmpv2_hdr.message_type).unwrap();
+                                IpProto::Igmp(IgmpPacket::V2(IGMPv2Packet {
+                                    igmp_type,
+                                    max_response_time: igmpv2_hdr.max_response_time,
+                                    checksum: igmpv2_hdr.checksum(),
+                                    group_address: Ipv4Addr::from_bits(igmpv2_hdr.group_address()),
+                                }))
+                            }
+                            IgmpHdr::V3(igmpv3_hdr) => match igmpv3_hdr {
+                                IGMPv3Hdr::Query(query) => IpProto::Igmp(IgmpPacket::V3(
+                                    IGMPv3Packet::Query(IGMPv3MembershipQueryPacket {
+                                        max_response_code: query.max_response_time,
+                                        checksum: query.checksum(),
+                                        group_address: Ipv4Addr::from_bits(query.group_address()),
+                                        s: query.s(),
+                                        qrv: query.qrv(),
+                                        qqic: query.qqic,
+                                        nb_source_addr: query.nb_sources() as u16,
+                                    }),
+                                )),
+                                IGMPv3Hdr::Report(report) => IpProto::Igmp(IgmpPacket::V3(
+                                    IGMPv3Packet::Report(IGMPv3MembershipReportPacket {
+                                        checksum: report.checksum(),
+                                        nb_group_records: report.nb_group_records(),
+                                    }),
+                                )),
+                            },
+                        },
                         _ => unreachable!(),
                     };
 
